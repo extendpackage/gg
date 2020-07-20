@@ -11,12 +11,27 @@ import (
 	"math"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/golang/freetype/truetype"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
+
+var bytePool = sync.Pool{
+	New: func() interface{} {
+		b := make([]byte, 1024)
+		return b
+	},
+}
+
+// var facePool = sync.Pool{
+// 	New: func() interface{} {
+// 		face := truetype.NewFace("", nil}
+// 		return face
+// 	},
+// }
 
 func Radians(degrees float64) float64 {
 	return degrees * math.Pi / 180
@@ -130,6 +145,7 @@ func unfix(x fixed.Int26_6) float64 {
 // You can usually just use the Context.LoadFontFace function instead of
 // this package-level function.
 func LoadFontFace(path string, points float64) (font.Face, error) {
+	fontBytes := bytePool.Get().([]byte)
 	fontBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -142,5 +158,6 @@ func LoadFontFace(path string, points float64) (font.Face, error) {
 		Size: points,
 		// Hinting: font.HintingFull,
 	})
+	bytePool.Put(fontBytes)
 	return face, nil
 }
